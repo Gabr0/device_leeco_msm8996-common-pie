@@ -37,7 +37,6 @@
 #include <sys/types.h>
 
 #include <android-base/file.h>
-#include <android-base/logging.h>
 #include <android-base/properties.h>
 #include <android-base/strings.h>
 
@@ -46,7 +45,9 @@
 
 #include "vendor_init.h"
 #include "property_service.h"
-#include "util.h"
+
+using android::base::GetProperty;
+using android::init::property_set;
 
 #define DEVINFO_FILE "/dev/block/sde21"
 
@@ -63,13 +64,6 @@ void property_override(const std::string& name, const std::string& value)
     if (pi != nullptr) {
         __system_property_update(pi, value.c_str(), valuelen);
     }
-    else {
-        int rc = __system_property_add(name.c_str(), name.size(), value.c_str(), valuelen);
-        if (rc < 0) {
-            LOG(ERROR) << "property_set(\"" << name << "\", \"" << value << "\") failed: "
-                       << "__system_property_add failed";
-        }
-    }
 }
 
 void property_override_dual(const std::string& system_prop, const std::string& vendor_prop, const std::string& value)
@@ -84,8 +78,6 @@ void init_target_properties()
     int unknownDevice = 1;
 
     if (ReadFileToString(DEVINFO_FILE, &device)) {
-        LOG(INFO) << "DEVINFO: " << device;
-
         if (!strncmp(device.c_str(), "le_zl0_whole_netcom", 19)) {
             // This is LEX722
             property_override_dual("ro.product.device", "ro.vendor.product.device", "le_zl0");
@@ -147,9 +139,6 @@ void init_target_properties()
             property_set("persist.nfc.smartcard.config", "SIM1,SIM2,eSE1");
             unknownDevice = 0;
         }
-    }
-    else {
-        LOG(ERROR) << "Unable to read DEVINFO from " << DEVINFO_FILE;
     }
 
     if (unknownDevice) {
@@ -214,13 +203,9 @@ void init_alarm_boot_properties()
             property_set("ro.alarm_boot", "false");
         }
     }
-    else {
-        LOG(ERROR) << "Unable to read bootreason from " << boot_reason_file;
-    }
 }
 
 void vendor_load_properties() {
-    LOG(INFO) << "Loading vendor specific properties";
     init_target_properties();
     init_alarm_boot_properties();
 }
