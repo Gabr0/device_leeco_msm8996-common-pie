@@ -48,8 +48,13 @@ BiometricsFingerprint::BiometricsFingerprint() : mClientCallback(nullptr), mDevi
     char vend [PROPERTY_VALUE_MAX];
     property_get("ro.boot.fpsensor", vend, NULL);
 
-    is_goodix = strcmp(vend, "fpc");
-    mDevice = is_goodix ? getWrapperService(BiometricsFingerprint::notify) : openHal();
+    if (!strcmp(vend, "fpc")) {
+        is_goodix = false;
+        mDevice = openHal();
+    } else {
+        is_goodix = true;
+        mDevice = getWrapperService(BiometricsFingerprint::notify);
+    }
 
     if (!mDevice) {
         ALOGE("Can't open HAL module");
@@ -203,8 +208,8 @@ Return<RequestStatus> BiometricsFingerprint::enumerate()  {
 
     if (ret == 0 && mClientCallback != nullptr) {
         ALOGD("Got %d enumerated templates", n);
-        const uint64_t devId = reinterpret_cast<uint64_t>(mDevice);
         for (uint32_t i = 0; i < n; i++) {
+            const uint64_t devId = reinterpret_cast<uint64_t>(mDevice);
             const auto& fp = results[i];
             ALOGD("onEnumerate(fid=%d, gid=%d)", fp.fid, fp.gid);
             if (!mClientCallback->onEnumerate(devId, fp.fid, fp.gid, n - i - 1).isOk()) {

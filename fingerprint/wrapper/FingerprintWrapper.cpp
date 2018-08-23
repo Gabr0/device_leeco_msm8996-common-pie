@@ -145,12 +145,14 @@ static int remove(struct fingerprint_device *dev, uint32_t gid, uint32_t fid)
 static int set_active_group(struct fingerprint_device *dev, uint32_t gid, const char *store_path)
 {
     device_t *device = (device_t *) dev;
-    int ret = device->vendor.device->set_active_group(device->vendor.device, gid, store_path);
+    int ret;
+
+    ret = device->vendor.device->set_active_group(device->vendor.device, gid, store_path);
 
     // FingerGoodix: fpcode, the group 0 has already been actived.
     if (ret == 1) {
         // RequestStatus::SYS_OK
-        return 0;
+        ret = 0;
     }
 
     return ret;
